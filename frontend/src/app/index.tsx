@@ -14,7 +14,7 @@ import { useTheme } from '@/hooks/use-theme';
 export default function PostsScreen() {
   const theme = useTheme();
   const { insets, padding } = useContentInsets();
-  const { posts, loading, refreshing, loadingMore, error, refresh, loadMore } = usePosts();
+  const { posts, loading, refreshing, loadingMore, error, refresh, loadMore, react } = usePosts();
 
   // Reload whenever the tab is shown, so a post made on the other tab appears right away.
   useFocusEffect(
@@ -55,7 +55,7 @@ export default function PostsScreen() {
         style={styles.list}
         data={posts}
         keyExtractor={(post) => String(post.id)}
-        renderItem={({ item }) => <PostCard post={item} />}
+        renderItem={({ item }) => <PostCard post={item} onReact={react} />}
         ItemSeparatorComponent={Separator}
         ListHeaderComponent={
           <ThemedView style={styles.hero}>

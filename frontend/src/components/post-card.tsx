@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { StyleSheet } from 'react-native';
 
+import { ReactionBar } from '@/components/reaction-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -19,7 +20,12 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-export const PostCard = memo(function PostCard({ post }: { post: Post }) {
+type Props = {
+  post: Post;
+  onReact: (postId: number, emoji: string) => void;
+};
+
+export const PostCard = memo(function PostCard({ post, onReact }: Props) {
   const initial = Array.from(post.name.trim())[0]?.toUpperCase() ?? '?';
 
   return (
@@ -40,6 +46,7 @@ export const PostCard = memo(function PostCard({ post }: { post: Post }) {
         </ThemedView>
       </ThemedView>
       <ThemedText>{post.content}</ThemedText>
+      <ReactionBar reactions={post.reactions} onToggle={(emoji) => onReact(post.id, emoji)} />
     </ThemedView>
   );
 });

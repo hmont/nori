@@ -1,6 +1,19 @@
 import { useCallback, useRef, useState } from 'react';
 
-import { fetchPosts, type Post } from '@/api/posts';
+import { fetchPosts, REACTION_EMOJIS, toggleReaction, type Post, type Reaction } from '@/api/posts';
+
+/** The reactions list after the viewer toggles `emoji`, without waiting for the server. */
+function withToggled(reactions: Reaction[], emoji: string): Reaction[] {
+  const existing = reactions.find((r) => r.emoji === emoji);
+  if (!existing) {
+    const added = [...reactions, { emoji, count: 1, reacted: true }];
+    const order = (e: string) => REACTION_EMOJIS.indexOf(e as (typeof REACTION_EMOJIS)[number]);
+    return added.sort((a, b) => order(a.emoji) - order(b.emoji));
+  }
+  if (existing.reacted && existing.count <= 1) return reactions.filter((r) => r !== existing);
+  const changed = { ...existing, count: existing.count + (existing.reacted ? -1 : 1), reacted: !existing.reacted };
+  return reactions.map((r) => (r === existing ? changed : r));
+}
 
 /** Paginated, newest-first list of posts with refresh and load-more. */
 export function usePosts() {
@@ -48,5 +61,21 @@ export function usePosts() {
     if (hasMore && !error) load(false, false);
   }, [hasMore, error, load]);
 
-  return { posts, loading, refreshing, loadingMore, error, refresh, loadMore };
+  /** Toggles the viewer's reaction right away, then syncs with the server (undoing it on failure). */
+  const react = useCallback(async (postId: number, emoji: string) => {
+    const update = (change: (reactions: Reaction[]) => Reaction[]) =>
+      setPosts((current) =>
+        current.map((post) => (post.id === postId ? { ...post, reactions: change(post.reactions) } : post)),
+      );
+
+    update((reactions) => withToggled(reactions, emoji));
+    try {
+      const reactions = await toggleReaction(postId, emoji);
+      update(() => reactions);
+    } catch {
+      update((reactions) => withToggled(reactions, emoji));
+    }
+  }, []);
+
+  return { posts, loading, refreshing, loadingMore, error, refresh, loadMore, react };
 }
